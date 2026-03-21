@@ -1,0 +1,39 @@
+
+
+services:
+  api:
+    build: .
+    container_name: ukraine_trip_api
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app  # Це дозволить оновлювати код без перезапуску контейнера!
+    env_file:
+      - .env
+    depends_on:
+      - db
+
+  db:
+    image: postgres:16-alpine
+    container_name: ukraine_trip_db
+    restart: always
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: ukraine_trip
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  adminer:
+    image: adminer
+    container_name: ukraine_trip_adminer
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:
