@@ -6,6 +6,24 @@ from logging.config import fileConfig
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import create_async_engine # Додали асинхронний двигун
 from alembic import context
+import os
+import sys
+from sqlalchemy.ext.asyncio import async_engine_from_config
+
+# Додаємо корінь проєкту, щоб Alembic бачив твій код
+sys.path.append(os.getcwd())
+
+from src.app.core.config import settings
+
+config = context.config
+
+# Жорстко кажемо Alembic брати посилання з твого config.py
+if settings.DATABASE_URL:
+    config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+else:
+    raise ValueError("Alembic не бачить DATABASE_URL! Перевір docker-compose.yml")
+
+
 
 
 
@@ -42,14 +60,20 @@ def do_run_migrations(connection):
         context.run_migrations()
 
 async def run_async_migrations() -> None:
-    """Асинхронне підключення до бази."""
-    connectable = create_async_engine(
-        DB_URL,
+    ini_section = config.get_section(config.config_ini_section, {})
+    
+    
+    ini_section["sqlalchemy.url"] = settings.DATABASE_URL
+    
+    
+    connectable = async_engine_from_config(
+        ini_section, 
+        prefix="sqlalchemy.",
         poolclass=pool.NullPool,
+        future=True,
     )
 
     async with connectable.connect() as connection:
-        # Конвертуємо асинхронне підключення в синхронне для Alembic
         await connection.run_sync(do_run_migrations)
 
     await connectable.dispose()
