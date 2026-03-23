@@ -9,7 +9,6 @@ from alembic import context
 import os
 import sys
 from sqlalchemy.ext.asyncio import async_engine_from_config
-
 # Додаємо корінь проєкту, щоб Alembic бачив твій код
 sys.path.append(os.getcwd())
 
