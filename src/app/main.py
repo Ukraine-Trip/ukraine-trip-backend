@@ -2,13 +2,20 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 # Імпортуємо маршрути (ендпоінти) з нашої структури
-from src.app.api.v1 import auth, trips, ai
+from app.api.v1 import auth, trips, ai
 
 app = FastAPI(
     title="Ukraine Trip API",
     description="Бекенд для генерації смарт-маршрутів по Україні",
     version="1.0.0"
 )
+
+from app.db.session import engine
+from app.models.user import User, Base
+@app.on_event("startup")
+async def init_tables():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
 
 # Дозволяємо фронтенду підключатися без помилок CORS
 app.add_middleware(

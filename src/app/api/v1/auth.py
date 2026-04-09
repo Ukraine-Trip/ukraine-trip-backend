@@ -1,24 +1,48 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-#from app.db.session import get_db
-from app.core.security import get_password_hash
+from app.api.dependencies import get_db
+from app.core.security import get_password_hash, verify_password, create_access_token
 from app.schemas.user import UserCreate, UserResponse
 from app.models.user import User
+from app.schemas.token import Token
+from fastapi.security import OAuth2PasswordRequestForm
 
-router = APIRouter()
+router = APIRouter(prefix="/auth", tags=["Авторизація (Шемік)"])
 
-# TODO для розробника (Auth):
-# 1. Створити Pydantic-схеми UserCreate та UserResponse в папці schemas/user.py
-# 2. Реалізувати хешування паролів через бібліотеку passlib
-# 3. Налаштувати генерацію JWT токенів
+@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+async def register_user(user_data: UserCreate, db: AsyncSession = Depends(get_db)):
+    existing_user = await db.execute(select(User).where(User.email == user_data.email))
+    if existing_user.scalar():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User with this email already exists"
+        )
 
-@router.post("/register")
-async def register_user():
-    """Ендпоінт для реєстрації нового користувача"""
-    return {"message": "Тут буде логіка реєстрації. Поки що це заглушка."}
+    hashed_password = get_password_hash(user_data.password)
 
-@router.post("/login")
-async def login_user():
-    """Ендпоінт для логіну та отримання токена"""
-    return {"access_token": "fake-jwt-token", "token_type": "bearer"}
+    new_user = User(
+        email=user_data.email,
+        hashed_password=hashed_password,
+    )
+
+    db.add(new_user)
+    await db.commit()
+    await db.refresh(new_user)
+
+    return new_user
+
+
+@router.post("/login", response_model=Token)
+async def login_user(db: AsyncSession = Depends(get_db), form_data: OAuth2PasswordRequestForm = Depends()):
+    user_result = await db.execute(select(User).where(User.email == form_data.username))
+    user = user_result.scalar_one_or_none()
+
+    if not user or not verify_password(form_data.password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, 
+            detail="Incorrect email or password"
+        )
+
+    access_token = create_access_token(subject=user.id)
+    return {"access_token": access_token, "token_type": "bearer"}
