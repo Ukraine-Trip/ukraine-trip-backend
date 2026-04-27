@@ -1,26 +1,24 @@
-# Використовуємо офіційний легкий образ Python
-FROM python:3.12-slim
+﻿FROM python:3.12-slim
 
-WORKDIR /app
+# Встановлюємо залежності для psycopg2
+RUN apt-get update && apt-get install -y \
+    libpq-dev \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
 
-# Забороняємо Python створювати зайві кеш-файли
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+WORKDIR /code
 
-# Оновлюємо pip (гарна практика)
-RUN pip install --upgrade pip
+# Копіюємо конфігурацію
+COPY pyproject.toml .
 
-# Спочатку копіюємо файли конфігурації проєкту (для кешування Докером)
-COPY pyproject.toml README.md ./
+# КРИТИЧНО: Створюємо пустий README, бо pip install . часто його шукає
+RUN touch README.md
 
-# Копіюємо код (потрібно для того, щоб pip install . спрацював коректно)
-COPY src/ ./src/
+# Оновлюємо pip і встановлюємо проєкт
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir .
 
-# Встановлюємо залежності проєкту з pyproject.toml
-RUN pip install --no-cache-dir .
+# Копіюємо код
+COPY ./app ./app
 
-# Копіюємо всі інші файли (наприклад, alembic, тести тощо)
-COPY . .
-
-# Запускаємо сервер
-CMD ["uvicorn", "src.app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

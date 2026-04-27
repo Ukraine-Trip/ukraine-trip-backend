@@ -1,87 +1,87 @@
 import sys
-import asyncio # Додали asyncio
-from os.path import abspath, dirname
-from logging.config import fileConfig
-#from src.app.core.config import settings
-from sqlalchemy import pool
-from sqlalchemy.ext.asyncio import create_async_engine # Додали асинхронний двигун
-from alembic import context
 import os
-import sys
-from sqlalchemy.ext.asyncio import async_engine_from_config
-# Додаємо корінь проєкту, щоб Alembic бачив твій код
-sys.path.append(os.getcwd())
+from logging.config import fileConfig
 
-from src.app.core.config import settings
+from sqlalchemy import engine_from_config
+from sqlalchemy import pool
+from alembic import context
+
+# -------------------------------------------------------------------
+# НАШІ КАСТОМНІ НАЛАШТУВАННЯ
+# -------------------------------------------------------------------
+
+# 1. Додаємо корінь проєкту в шлях Python, щоб Alembic бачив папку "app"
+sys.path.insert(0, os.path.realpath(os.path.join(os.path.dirname(__file__), '..')))
+
+# 2. Завантажуємо змінні оточення
+from dotenv import load_dotenv
+load_dotenv()
+
+# 3. Імпортуємо Base та URL з нашого конфігу
+from app.db.session import Base, DATABASE_URL
+
+# 4. ВАЖЛИВО: Імпортуємо всі наші моделі, щоб Alembic знав про їхнє існування
+from app.models.user import User
+from app.models.location import Location  
+from app.models.trip import Trip, TripNode
+from app.models.bookmark import Bookmark 
+# Коли додаш модель Trip, розкоментуй або додай її сюди:
+# from app.models.trip import Trip
+
+# -------------------------------------------------------------------
+# СТАНДАРТНІ НАЛАШТУВАННЯ ALEMBIC
+# -------------------------------------------------------------------
 
 config = context.config
 
-# Жорстко кажемо Alembic брати посилання з твого config.py
-if settings.DATABASE_URL:
-    config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
-else:
-    raise ValueError("Alembic не бачить DATABASE_URL! Перевір docker-compose.yml")
+# Примусово змушуємо Alembic використовувати URL з нашого session.py
+config.set_main_option("sqlalchemy.url", DATABASE_URL)
 
-
-
-
-
-sys.path.insert(0, dirname(dirname(abspath(__file__))))
-
-from src.app.models import Base 
-
-config = context.config
+# Налаштування логування
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
+# Вказуємо Alembic, куди дивитися для порівняння таблиць
 target_metadata = Base.metadata
 
-# Твій хардкод URL для локальної бази
-DB_URL = "postgresql+asyncpg://user:password@db:5432/ukraine_trip"
-
 def run_migrations_offline() -> None:
-    """Офлайн міграції."""
+    """Run migrations in 'offline' mode.
+    This configures the context with just a URL
+    and not an Engine, though an Engine is acceptable
+    here as well.  By skipping the Engine creation
+    we don't even need a DBAPI to be available.
+    Calls to context.execute() here emit the given string to the
+    script output.
+    """
+    url = config.get_main_option("sqlalchemy.url")
     context.configure(
-        url=DB_URL,
+        url=url,
         target_metadata=target_metadata,
         literal_binds=True,
-        dialect_opts={"paramstyle": "pyformat"},
-    )
-    with context.begin_transaction():
-        context.run_migrations()
-
-# --- НОВИЙ АСИНХРОННИЙ БЛОК ---
-
-def do_run_migrations(connection):
-    """Ця функція виконується всередині синхронного контексту."""
-    context.configure(connection=connection, target_metadata=target_metadata)
-    with context.begin_transaction():
-        context.run_migrations()
-
-async def run_async_migrations() -> None:
-    ini_section = config.get_section(config.config_ini_section, {})
-    
-    
-    ini_section["sqlalchemy.url"] = settings.DATABASE_URL
-    
-    
-    connectable = async_engine_from_config(
-        ini_section, 
-        prefix="sqlalchemy.",
-        poolclass=pool.NullPool,
-        future=True,
+        dialect_opts={"paramstyle": "named"},
     )
 
-    async with connectable.connect() as connection:
-        await connection.run_sync(do_run_migrations)
-
-    await connectable.dispose()
+    with context.begin_transaction():
+        context.run_migrations()
 
 def run_migrations_online() -> None:
-    """Точка входу для онлайн міграцій."""
-    asyncio.run(run_async_migrations())
+    """Run migrations in 'online' mode.
+    In this scenario we need to create an Engine
+    and associate a connection with the context.
+    """
+    connectable = engine_from_config(
+        config.get_section(config.config_ini_section, {}),
+        prefix="sqlalchemy.",
+        poolclass=pool.NullPool,
+    )
 
-# ------------------------------
+    with connectable.connect() as connection:
+        context.configure(
+            connection=connection, target_metadata=target_metadata
+        )
+
+        with context.begin_transaction():
+            context.run_migrations()
 
 if context.is_offline_mode():
     run_migrations_offline()
