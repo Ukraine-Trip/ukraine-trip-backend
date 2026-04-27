@@ -4,6 +4,7 @@ from pydantic import BaseModel, EmailStr, ConfigDict
 # Тільки email
 class UserBase(BaseModel):
     email: EmailStr
+    full_name: str
 
 # Для реєстрації додаємо тільки пароль
 class UserCreate(UserBase):
