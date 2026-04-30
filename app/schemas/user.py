@@ -1,3 +1,4 @@
+from typing import Optional
 from pydantic import BaseModel, EmailStr, ConfigDict
 
 
@@ -9,6 +10,10 @@ class UserBase(BaseModel):
 # Для реєстрації додаємо тільки пароль
 class UserCreate(UserBase):
     password: str
+
+# Для оновлення ім'я користувача
+class UserUpdate(BaseModel):
+    full_name: Optional[str] = None
 
 # Для відповіді (що бачить клієнт)
 class UserResponse(UserBase):

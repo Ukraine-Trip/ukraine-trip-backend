@@ -11,7 +11,7 @@ def get_user_by_email(db: Session, email: str) -> Optional[User]:
 def create_user(db: Session, user_in: UserCreate) -> User:
     db_user = User(
         email=user_in.email,
-        hashed_password=get_password_hash(user_in.password)
+        hashed_password=get_password_hash(user_in.password),
         full_name=user_in.full_name
         # база даних автоматично залишить їх порожніми (NULL).
     )

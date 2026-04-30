@@ -9,7 +9,7 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True, nullable=False)
-    full_name = Column(String, nullable=True)  # Новое поле
+    full_name = Column(String, nullable=False)  # Новое поле
     hashed_password = Column(String, nullable=False)
     role = Column(String, default="client")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
