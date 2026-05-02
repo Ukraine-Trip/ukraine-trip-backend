@@ -9,11 +9,11 @@ def create_bookmark(db: Session, user_id: int, location_id: UUID):
         Bookmark.location_id == location_id
     ).first()
     
-    # Якщо вже є - просто повертаємо її (щоб не кидати помилку, якщо юзер клікне двічі)
+    
     if existing_bookmark:
         return existing_bookmark
 
-    # Якщо немає - створюємо нову
+    
     new_bookmark = Bookmark(user_id=user_id, location_id=location_id)
     db.add(new_bookmark)
     db.commit()
