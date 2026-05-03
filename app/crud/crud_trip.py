@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload  # <--- ДОДАЛИ selectinload
 from uuid import UUID
 from typing import List
 
@@ -6,7 +6,11 @@ from app.models.trip import Trip, TripNode
 from app.schemas.trip import TripCreate, TripNodeUpdate
 
 def get_trip(db: Session, trip_id: str | UUID):
-    return db.query(Trip).filter(Trip.id == trip_id).first()
+    """Отримання маршруту разом з усіма точками та даними локацій"""
+    return db.query(Trip).options(
+        # Підвантажуємо список nodes, а для кожного node — його location
+        selectinload(Trip.nodes).selectinload(TripNode.location)
+    ).filter(Trip.id == trip_id).first()
 
 def create_trip(db: Session, obj_in: TripCreate, user_id: UUID):
     db_obj = Trip(**obj_in.model_dump(), user_id=user_id)
@@ -30,6 +34,8 @@ def update_trip_nodes(db: Session, trip_id: UUID, nodes_in: List[TripNodeUpdate]
         db.add(new_node)
         
     db.commit()
+    # Оскільки ми змінили get_trip, він автоматично поверне 
+    # оновлений маршрут з повними даними локацій!
     return get_trip(db, trip_id)
 
 def delete_trip(db: Session, trip_id: UUID):
