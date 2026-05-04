@@ -1,4 +1,16 @@
-﻿services:
+services:
+  api:
+    build: .
+    container_name: ukraine_trip_api
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app  # Це дозволить оновлювати код без перезапуску контейнера!
+    env_file:
+      - .env
+    depends_on:
+      - db
+
   adminer:
     image: adminer
     container_name: ukraine_trip_adminer
