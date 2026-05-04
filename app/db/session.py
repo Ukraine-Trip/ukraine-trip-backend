@@ -6,7 +6,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # URL підключення
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+psycopg2://user:password@ukraine_trip_db:5432/ukraine_trip")
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL environment variable is not set")
 
 # Створення рушія (Зверни увагу: create_engine, а НЕ create_async_engine)
 engine = create_engine(DATABASE_URL)
