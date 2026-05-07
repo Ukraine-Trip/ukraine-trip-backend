@@ -12,6 +12,11 @@ from app.api.deps import get_current_user, get_trip_and_check_owner
 
 router = APIRouter()
 
+@router.get("/", response_model=List[TripResponse])
+def read_all_trips(db: Session = Depends(get_db)):
+    """Список усіх маршрутів (публічно)"""
+    return crud_trip.get_all_trips(db)
+
 @router.post("/", response_model=TripResponse, status_code=status.HTTP_201_CREATED)
 def create_trip(
     trip_in: TripCreate,
