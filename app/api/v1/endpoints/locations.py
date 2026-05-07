@@ -29,6 +29,13 @@ def read_location(id: UUID, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Локацію не знайдено")
     return location
 
+@router.get("/my", response_model=List[LocationResponse])
+def read_my_locations(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)  # обов'язкова авторизація
+):
+    return crud_location.get_my_locations(db, owner_id=current_user.id)
+
 @router.post("/", response_model=LocationResponse, status_code=status.HTTP_201_CREATED)
 def create_location(
     location_in: LocationCreate,
@@ -36,7 +43,7 @@ def create_location(
     current_user: User = Depends(get_current_user) # Вимагаємо токен!
 ):
     """Додавання нової локації (за замовчуванням is_approved=False)"""
-    return crud_location.create_location(db, obj_in=location_in)
+    return crud_location.create_location(db, obj_in=location_in, owner_id=current_user.id)
 
 @router.post("/{id}/reviews")
 def add_review(
