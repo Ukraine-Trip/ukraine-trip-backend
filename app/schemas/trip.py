@@ -9,6 +9,8 @@ class TripCreate(BaseModel):
     description: Optional[str] = None
     start_date: Optional[date] = None
     end_date: Optional[date] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
 class TripNodeUpdate(BaseModel):
     location_id: UUID
@@ -28,5 +30,7 @@ class TripResponse(BaseModel):
     start_date: Optional[date] = None
     end_date: Optional[date] = None
     user_id: int
-    nodes: List[TripNodeResponse] = []
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    trip_nodes: List[TripNodeResponse] = []
     model_config = ConfigDict(from_attributes=True)
