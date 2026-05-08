@@ -11,6 +11,12 @@ from app.models.user import User
 
 router = APIRouter()
 
+@router.get("/my", response_model=List[LocationResponse])
+def read_my_locations(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)  # обов'язкова авторизація
+):
+    return crud_location.get_my_locations(db, owner_id=current_user.id)
 
 @router.get("/", response_model=List[LocationResponse])
 def read_locations(
@@ -42,7 +48,7 @@ def create_location(
     current_user: User = Depends(get_current_user),
 ):
     """Додавання нової локації (за замовчуванням is_approved=False)"""
-    return crud_location.create_location(db, obj_in=location_in)
+    return crud_location.create_location(db, obj_in=location_in, owner_id=current_user.id)
 
 
 @router.post("/{id}/reviews")

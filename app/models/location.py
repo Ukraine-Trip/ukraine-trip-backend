@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, String, Float, Boolean, Text, Integer
+from sqlalchemy import Column, String, Float, Boolean, Text, Integer, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from app.db.session import Base
 
@@ -23,3 +23,6 @@ class Location(Base):
     # Для модерації (за замовчуванням False, поки адмін не схвалить)
     is_approved = Column(Boolean, default=False)
     priority = Column(Integer, default=3, server_default="3", nullable=False)
+
+    # ID користувача який створив локацію (nullable щоб не зламати існуючі записи)
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=True)

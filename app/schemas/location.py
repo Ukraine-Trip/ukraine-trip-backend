@@ -19,6 +19,8 @@ class LocationResponse(LocationBase):
     rating: float
     is_approved: bool
 
+    owner_id: Optional[int] = None
+
     model_config = ConfigDict(from_attributes=True)
 
 # Схема для 4-го ендпоінту (відгуки)

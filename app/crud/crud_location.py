@@ -43,17 +43,22 @@ def get_location(db: Session, location_id: str | UUID):
     return db.query(Location).filter(Location.id == location_id).first()
 
 
-def create_location(db: Session, obj_in: LocationCreate):
+def create_location(db: Session, obj_in: LocationCreate, owner_id: int):
     """Створення нової локації"""
     
     # model_dump() акуратно перетворює Pydantic-схему на словник для бази
     db_obj = Location(**obj_in.model_dump())
-    
+
+    db_obj.owner_id = owner_id
     db.add(db_obj)
     db.commit()
     db.refresh(db_obj)
     
     return db_obj
+
+def get_my_locations(db: Session, owner_id: int):
+
+    return db.query(Location).filter(Location.owner_id == owner_id).all()
 
 # ТИМЧАСОВА ЗАГЛУШКА ДЛЯ ВІДГУКІВ
 # Коли у нас з'явиться таблиця Reviews, ми додамо сюди функцію create_review
