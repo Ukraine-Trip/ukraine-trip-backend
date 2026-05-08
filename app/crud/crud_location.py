@@ -40,7 +40,7 @@ def get_locations(
 
 def get_location(db: Session, location_id: str | UUID):
     """Отримання детальної інформації про конкретну локацію за її ID"""
-    return db.query(Location).filter(Location.id == str(location_id)).first()
+    return db.query(Location).filter(Location.id == location_id).first()
 
 
 def create_location(db: Session, obj_in: LocationCreate, owner_id: int):
