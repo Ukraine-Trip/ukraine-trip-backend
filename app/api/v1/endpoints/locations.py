@@ -11,6 +11,13 @@ from app.models.user import User
 
 router = APIRouter()
 
+@router.get("/my", response_model=List[LocationResponse])
+def read_my_locations(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)  # обов'язкова авторизація
+):
+    return crud_location.get_my_locations(db, owner_id=current_user.id)
+
 @router.get("/", response_model=List[LocationResponse])
 def read_locations(
     region: str = Query(None, description="Фільтр за областю"),
@@ -28,13 +35,6 @@ def read_location(id: UUID, db: Session = Depends(get_db)):
     if not location:
         raise HTTPException(status_code=404, detail="Локацію не знайдено")
     return location
-
-@router.get("/my", response_model=List[LocationResponse])
-def read_my_locations(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)  # обов'язкова авторизація
-):
-    return crud_location.get_my_locations(db, owner_id=current_user.id)
 
 @router.post("/", response_model=LocationResponse, status_code=status.HTTP_201_CREATED)
 def create_location(
