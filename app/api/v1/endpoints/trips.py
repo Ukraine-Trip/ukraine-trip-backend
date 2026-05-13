@@ -31,38 +31,47 @@ def create_trip(
 
 @router.post("/build", response_model=TripResponse)
 def build_optimized_route(request: RouteBuildRequest, db: Session = Depends(get_db)):
+    """Побудова маршруту: автоматична оптимізація (OSRM) або збереження порядку користувача"""
+    
     # 1. Дістаємо локації за списком ID
     query = select(Location).where(Location.id.in_(request.location_ids))
     locations_from_db = db.execute(query).scalars().all()
     
     if len(locations_from_db) != len(request.location_ids):
-        raise HTTPException(status_code=404, detail="Деякі локації не знайдено")
+        raise HTTPException(status_code=404, detail="Деякі локації не знайдено в базі")
 
-    # Створюємо словник для швидкого доступу та зберігаємо порядок фронта
+    # Створюємо словник для швидкого доступу та зберігаємо початковий порядок фронтенду
     loc_map = {loc.id: loc for loc in locations_from_db}
     ordered_locs = [loc_map[lid] for lid in request.location_ids]
 
-    # 2. Оптимізуємо порядок через OSRM
-    coords = [{"lat": l.lat, "lon": l.lon} for l in ordered_locs]
-    optimal_indices = get_optimal_order(coords)
+    # 2. Перевіряємо, чи потрібна оптимізація (прапорець optimize)
+    if request.optimize:
+        # Звертаємось до OSRM для розрахунку найкоротшого шляху
+        coords = [{"lat": l.lat, "lon": l.lon} for l in ordered_locs]
+        final_indices = get_optimal_order(coords)
+    else:
+        # Якщо юзер хоче свій порядок, просто створюємо послідовність [0, 1, 2, 3...]
+        final_indices = list(range(len(ordered_locs)))
 
-    # 3. Створюємо Trip
-    new_trip = Trip(title=request.title, user_id=1) # user_id тимчасово 1
+    # 3. Створюємо сам маршрут (Trip)
+    # TODO: Замінити user_id=1 на реального користувача (current_user.id), коли підключиш авторизацію для цього роуту
+    new_trip = Trip(title=request.title, user_id=1) 
     db.add(new_trip)
-    db.flush()
+    db.flush() # flush генерує new_trip.id, який нам потрібен для TripNode
 
-    # 4. Створюємо TripNodes в новому порядку
-    for new_index, orig_index in enumerate(optimal_indices):
+    # 4. Створюємо точки маршруту (TripNodes) у фінальному порядку
+    for new_index, orig_index in enumerate(final_indices):
         loc = ordered_locs[orig_index]
         node = TripNode(
             trip_id=new_trip.id,
             location_id=loc.id,
-            order_index=new_index
+            order_index=new_index # 0, 1, 2...
         )
         db.add(node)
         
     db.commit()
     
+    # Повертаємо готовий маршрут з усією вкладеністю (через selectinload)
     return crud_trip.get_trip(db, trip_id=new_trip.id)    
 @router.get("/{id}", response_model=TripResponse)
 def read_trip(id: UUID, db: Session = Depends(get_db)):

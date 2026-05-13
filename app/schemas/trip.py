@@ -37,4 +37,5 @@ class TripResponse(BaseModel):
 
 class RouteBuildRequest(BaseModel):
     title: str
-    location_ids: List[UUID]    
+    location_ids: List[UUID]
+    optimize: bool = True    
