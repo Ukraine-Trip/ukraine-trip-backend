@@ -5,11 +5,16 @@ from typing import List
 from app.models.trip import Trip, TripNode
 from app.schemas.trip import TripCreate, TripNodeUpdate
 
+def get_all_trips(db: Session):
+    return db.query(Trip).options(
+        selectinload(Trip.trip_nodes).selectinload(TripNode.location)
+    ).all()
+
 def get_trip(db: Session, trip_id: str | UUID):
     """Отримання маршруту разом з усіма точками та даними локацій"""
     return db.query(Trip).options(
         # Підвантажуємо список nodes, а для кожного node — його location
-        selectinload(Trip.nodes).selectinload(TripNode.location)
+        selectinload(Trip.trip_nodes).selectinload(TripNode.location)
     ).filter(Trip.id == trip_id).first()
 
 def create_trip(db: Session, obj_in: TripCreate, user_id: UUID):

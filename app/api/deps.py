@@ -7,6 +7,7 @@ from uuid import UUID
 from app.db.session import get_db
 from app.core import security
 from app.models.user import User
+from app.crud import crud_trip
 
 # Вказуємо Swagger, куди стукати за токеном
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")

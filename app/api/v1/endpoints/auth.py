@@ -29,4 +29,11 @@ def login(db: Session = Depends(get_db), form_data: OAuth2PasswordRequestForm = 
     access_token = security.create_access_token(
         subject=user.email, expires_delta=access_token_expires
     )
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user_id": user.id,
+        "email": user.email,
+        "full_name": user.full_name,
+        "role": user.role,
+    }
