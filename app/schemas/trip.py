@@ -34,3 +34,7 @@ class TripResponse(BaseModel):
     longitude: Optional[float] = None
     trip_nodes: List[TripNodeResponse] = []
     model_config = ConfigDict(from_attributes=True)
+
+class RouteBuildRequest(BaseModel):
+    title: str
+    location_ids: List[UUID]    
