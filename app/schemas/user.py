@@ -14,16 +14,10 @@ class UserCreate(UserBase):
 # Для оновлення даних користувача
 class UserUpdate(BaseModel):
     full_name: Optional[str] = None
-    email: Optional[EmailStr] = None
     password: Optional[str] = None
 
 # Для відповіді (що бачить клієнт)
 class UserResponse(UserBase):
     id: int
     
-
     model_config = ConfigDict(from_attributes=True)
-
-class UserUpdateResponse(UserResponse):
-    access_token: Optional[str] = None
-    token_type: Optional[str] = None
