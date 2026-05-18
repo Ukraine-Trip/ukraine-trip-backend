@@ -31,6 +31,14 @@ def read_all_trips(
     
     return crud_trip.get_all_trips(db)
 
+@router.get("/my", response_model=List[TripResponse])
+def read_my_trips(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Список маршрутів поточного користувача"""
+    return db.query(Trip).filter(Trip.user_id == current_user.id).all()
+
 @router.post("/", response_model=TripResponse, status_code=status.HTTP_201_CREATED)
 def create_trip(
     trip_in: TripCreate,
@@ -96,7 +104,10 @@ def read_trip(id: UUID, db: Session = Depends(get_db)):
     """Деталі маршруту з усіма точками (доступно всім)"""
     trip = crud_trip.get_trip(db, trip_id=id)
     if not trip:
-        raise HTTPException(status_code=404, detail="Маршрут не знайдено")
+        raise HTTPException(status_code=404, detail="Trip not found")
+
+    # Оскільки trip.trip_nodes відсортовані за order_index завдяки налаштуванням моделі,
+    # ми просто повертаємо об'єкт. Pydantic сам змапить trip_nodes у поле nodes (завдяки validation_alias)
     return trip
 
 @router.put("/{trip_id}/nodes", response_model=TripResponse)
@@ -115,4 +126,4 @@ def delete_trip(
 ):
     """Видалення маршруту"""
     crud_trip.delete_trip(db, trip_id=trip.id)
-    return None   
+    return None
