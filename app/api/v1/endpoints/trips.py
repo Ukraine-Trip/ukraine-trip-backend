@@ -9,7 +9,7 @@ from app.db.session import get_db
 from app.models.user import User
 from app.models.trip import Trip, TripNode
 from app.crud import crud_trip
-from app.schemas.trip import TripCreate, TripResponse, TripNodeUpdate, RouteBuildRequest
+from app.schemas.trip import TripCreate, TripResponse, TripNodeUpdate, RouteBuildRequest, RouteOptimizeRequest, RouteOptimizeResponse
 from app.api.deps import get_current_user, get_trip_and_check_owner
 from app.models.location import Location
 
@@ -70,9 +70,16 @@ def build_optimized_route(request: RouteBuildRequest, db: Session = Depends(get_
         db.add(node)
         
     db.commit()
-    
+
     # Повертаємо готовий маршрут з усією вкладеністю (через selectinload)
-    return crud_trip.get_trip(db, trip_id=new_trip.id)    
+    return crud_trip.get_trip(db, trip_id=new_trip.id)
+
+@router.post("/optimize", response_model=RouteOptimizeResponse)
+def optimize_route_order(request: RouteOptimizeRequest):
+    """Повертає оптимальний порядок індексів через OSRM (без збереження в БД)"""
+    ordered_indices = get_optimal_order(request.coordinates)
+    return RouteOptimizeResponse(ordered_indices=ordered_indices)
+
 @router.get("/{id}", response_model=TripResponse)
 def read_trip(id: UUID, db: Session = Depends(get_db)):
     """Деталі маршруту з усіма точками (доступно всім)"""
