@@ -78,7 +78,7 @@ def build_optimized_route(request: RouteBuildRequest, db: Session = Depends(get_
         db.add(node)
         
     db.commit()
-    
+
     # Повертаємо готовий маршрут з усією вкладеністю (через selectinload)
     return crud_trip.get_trip(db, trip_id=new_trip.id)
 

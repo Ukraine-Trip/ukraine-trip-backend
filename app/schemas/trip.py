@@ -51,5 +51,10 @@ class TripResponse(BaseModel):
 class RouteBuildRequest(BaseModel):
     title: str
     location_ids: List[UUID]
-    # Вирішено конфлікт: встановлено значення за замовчуванням False
     optimize: bool = False
+
+class RouteOptimizeRequest(BaseModel):
+    coordinates: List[dict]
+
+class RouteOptimizeResponse(BaseModel):
+    ordered_indices: List[int]
