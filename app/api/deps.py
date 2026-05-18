@@ -1,3 +1,4 @@
+from typing import Optional
 from fastapi import Depends, HTTPException, status, Path
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
@@ -11,6 +12,17 @@ from app.crud import crud_trip
 
 # Вказуємо Swagger, куди стукати за токеном
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+
+def get_current_user_optional(db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)) -> Optional[User]:
+    try:
+        payload = jwt.decode(token, security.SECRET_KEY, algorithms=[security.ALGORITHM])
+        email: str = payload.get("sub")
+        if email is None:
+            return None
+        user = db.query(User).filter(User.email == email).first()
+        return user
+    except (JWTError, HTTPException):
+        return None
 
 def get_current_user(db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)) -> User:
     credentials_exception = HTTPException(

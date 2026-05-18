@@ -5,10 +5,23 @@ from typing import List
 from app.models.trip import Trip, TripNode
 from app.schemas.trip import TripCreate, TripNodeUpdate
 
-def get_all_trips(db: Session):
-    return db.query(Trip).options(
+from app.models.user import User
+
+def get_all_trips(db: Session, user_id: int = None, is_system: bool = None):
+    query = db.query(Trip).join(User, Trip.user_id == User.id).options(
         selectinload(Trip.trip_nodes).selectinload(TripNode.location)
-    ).all()
+    )
+    
+    if user_id is not None:
+        query = query.filter(Trip.user_id == user_id)
+    
+    if is_system is not None:
+        if is_system:
+            query = query.filter(User.role == "admin")
+        else:
+            query = query.filter(User.role != "admin")
+            
+    return query.all()
 
 def get_trip(db: Session, trip_id: str | UUID):
     """Отримання маршруту разом з усіма точками та даними локацій"""

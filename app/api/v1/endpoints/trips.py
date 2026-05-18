@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends, status, HTTPException # 👈 Додано HTTPException
+from fastapi import APIRouter, Depends, status, HTTPException, Query # 👈 Додано HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import select
-from typing import List
+from typing import List, Optional
 from uuid import UUID
 from app.services.optimizer import get_optimal_order
 
@@ -10,14 +10,25 @@ from app.models.user import User
 from app.models.trip import Trip, TripNode
 from app.crud import crud_trip
 from app.schemas.trip import TripCreate, TripResponse, TripNodeUpdate, RouteBuildRequest, RouteOptimizeRequest, RouteOptimizeResponse
-from app.api.deps import get_current_user, get_trip_and_check_owner
+from app.api.deps import get_current_user, get_trip_and_check_owner, get_current_user_optional
 from app.models.location import Location
 
 router = APIRouter()
 
 @router.get("/", response_model=List[TripResponse])
-def read_all_trips(db: Session = Depends(get_db)):
-    """Список усіх маршрутів (публічно)"""
+def read_all_trips(
+    filter_type: str = Query("all", description="Фільтр маршрутів: 'all', 'my', 'system'"),
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_optional)
+):
+    """Список маршрутів з фільтрацією (публічно або за власником)"""
+    if filter_type == "my":
+        if not current_user:
+            raise HTTPException(status_code=401, detail="Авторизуйтесь для перегляду власних маршрутів")
+        return crud_trip.get_all_trips(db, user_id=current_user.id)
+    elif filter_type == "system":
+        return crud_trip.get_all_trips(db, is_system=True)
+    
     return crud_trip.get_all_trips(db)
 
 @router.post("/", response_model=TripResponse, status_code=status.HTTP_201_CREATED)
