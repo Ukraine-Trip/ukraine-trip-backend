@@ -4,6 +4,17 @@ from datetime import date
 from uuid import UUID
 from app.schemas.location import LocationResponse
 
+# Схема для оптимізатора
+class Coordinate(BaseModel):
+    lat: float
+    lon: float
+
+class RouteOptimizeRequest(BaseModel):
+    coordinates: List[Coordinate]
+
+class RouteOptimizeResponse(BaseModel):
+    ordered_indices: List[int]
+
 class TripCreate(BaseModel):
     title: str
     description: Optional[str] = None

@@ -9,7 +9,7 @@ from app.db.session import get_db
 from app.models.user import User
 from app.models.trip import Trip, TripNode
 from app.crud import crud_trip
-from app.schemas.trip import TripCreate, TripResponse, TripNodeUpdate, RouteBuildRequest
+from app.schemas.trip import TripCreate, TripResponse, TripNodeUpdate, RouteBuildRequest, RouteOptimizeRequest, RouteOptimizeResponse
 from app.api.deps import get_current_user, get_trip_and_check_owner
 from app.models.location import Location
 
@@ -17,7 +17,7 @@ router = APIRouter()
 
 @router.get("/", response_model=List[TripResponse])
 def read_all_trips(db: Session = Depends(get_db)):
-
+    """Список усіх маршрутів (публічно)"""
     return crud_trip.get_all_trips(db)
 
 @router.get("/my", response_model=List[TripResponse])
@@ -25,7 +25,7 @@ def read_my_trips(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-
+    """Список маршрутів поточного користувача"""
     return db.query(Trip).filter(Trip.user_id == current_user.id).all()
 
 @router.post("/", response_model=TripResponse, status_code=status.HTTP_201_CREATED)
@@ -34,12 +34,12 @@ def create_trip(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user) # Захищено токеном
 ):
-
+    """Створення нового маршруту (назва, опис, дати)"""
     return crud_trip.create_trip(db, obj_in=trip_in, user_id=current_user.id)
 
 @router.post("/build", response_model=TripResponse)
 def build_optimized_route(request: RouteBuildRequest, db: Session = Depends(get_db)):
-
+    """Побудова маршруту: автоматична оптимізація (OSRM) або збереження порядку користувача"""
     
     # 1. Дістаємо локації за списком ID
     query = select(Location).where(Location.id.in_(request.location_ids))
@@ -80,11 +80,17 @@ def build_optimized_route(request: RouteBuildRequest, db: Session = Depends(get_
     db.commit()
     
     # Повертаємо готовий маршрут з усією вкладеністю (через selectinload)
-    return crud_trip.get_trip(db, trip_id=new_trip.id)    
+    return crud_trip.get_trip(db, trip_id=new_trip.id)
+
+@router.post("/optimize", response_model=RouteOptimizeResponse)
+def optimize_route_order(request: RouteOptimizeRequest):
+    """Повертає оптимальний порядок індексів через OSRM (без збереження в БД)"""
+    ordered_indices = get_optimal_order(request.coordinates)
+    return RouteOptimizeResponse(ordered_indices=ordered_indices)
 
 @router.get("/{id}", response_model=TripResponse)
 def read_trip(id: UUID, db: Session = Depends(get_db)):
-
+    """Деталі маршруту з усіма точками (доступно всім)"""
     trip = crud_trip.get_trip(db, trip_id=id)
     if not trip:
         raise HTTPException(status_code=404, detail="Trip not found")
@@ -99,7 +105,7 @@ def update_trip_nodes(
     db: Session = Depends(get_db),
     trip: Trip = Depends(get_trip_and_check_owner) 
 ):
-
+    """Оновлення списку точок (додавання/видалення локацій, зміна черговості)"""
     return crud_trip.update_trip_nodes(db, trip_id=trip.id, nodes_in=nodes_in)
 
 @router.delete("/{trip_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -107,6 +113,6 @@ def delete_trip(
     db: Session = Depends(get_db),
     trip: Trip = Depends(get_trip_and_check_owner)
 ):
-
+    """Видалення маршруту"""
     crud_trip.delete_trip(db, trip_id=trip.id)
     return None
