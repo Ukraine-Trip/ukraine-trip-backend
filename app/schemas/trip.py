@@ -1,9 +1,21 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from typing import List, Optional
 from datetime import date
 from uuid import UUID
-from app.schemas.location import LocationResponse  # ← додати імпорт
+from app.schemas.location import LocationResponse
 
+# Схеми для нового ендпоінту /optimize
+class Coordinate(BaseModel):
+    lat: float
+    lon: float
+
+class RouteOptimizeRequest(BaseModel):
+    coordinates: List[Coordinate]
+
+class RouteOptimizeResponse(BaseModel):
+    ordered_indices: List[int]
+
+# Існуючі схеми
 class TripCreate(BaseModel):
     title: str
     description: Optional[str] = None
@@ -32,8 +44,9 @@ class TripResponse(BaseModel):
     user_id: int
     latitude: Optional[float] = None
     longitude: Optional[float] = None
-    trip_nodes: List[TripNodeResponse] = []
-    model_config = ConfigDict(from_attributes=True)
+    nodes: List[TripNodeResponse] = Field(default=[], alias="trip_nodes")
+
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 class RouteBuildRequest(BaseModel):
     title: str
