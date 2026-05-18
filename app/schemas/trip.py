@@ -1,8 +1,8 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from typing import List, Optional
 from datetime import date
 from uuid import UUID
-from app.schemas.location import LocationResponse  # ← додати імпорт
+from app.schemas.location import LocationResponse
 
 class TripCreate(BaseModel):
     title: str
@@ -32,10 +32,11 @@ class TripResponse(BaseModel):
     user_id: int
     latitude: Optional[float] = None
     longitude: Optional[float] = None
-    trip_nodes: List[TripNodeResponse] = []
-    model_config = ConfigDict(from_attributes=True)
+    nodes: List[TripNodeResponse] = Field(default=[], alias="trip_nodes")
+
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 class RouteBuildRequest(BaseModel):
     title: str
     location_ids: List[UUID]
-    optimize: bool = True    
+    optimize: bool = True
