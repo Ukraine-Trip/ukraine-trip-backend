@@ -4,7 +4,7 @@ from datetime import date
 from uuid import UUID
 from app.schemas.location import LocationResponse
 
-# Схема для оптимізатора
+# Схеми для нового ендпоінту /optimize
 class Coordinate(BaseModel):
     lat: float
     lon: float
@@ -15,6 +15,7 @@ class RouteOptimizeRequest(BaseModel):
 class RouteOptimizeResponse(BaseModel):
     ordered_indices: List[int]
 
+# Існуючі схеми
 class TripCreate(BaseModel):
     title: str
     description: Optional[str] = None
@@ -50,4 +51,5 @@ class TripResponse(BaseModel):
 class RouteBuildRequest(BaseModel):
     title: str
     location_ids: List[UUID]
+    # Вирішено конфлікт: встановлено значення за замовчуванням False
     optimize: bool = False
